@@ -1,0 +1,257 @@
+<!--
+  ============================================================
+  MMT Care — About Page Team Section
+  Add this to mmtcare.com.au/about
+
+  This fetches approved team members from the team portal API
+  and renders them automatically. No manual updates needed.
+  ============================================================
+-->
+
+<!-- SEO -->
+<title>About MMT Care | Leadership &amp; Care Team</title>
+<meta name="description" content="Meet the dedicated leadership and care professionals behind MMT Care Australia's participant-focused disability and support services.">
+
+<!-- Team Section HTML -->
+<section class="team-section">
+  <div class="container">
+    <div class="section-heading">
+      <span>Our Team</span>
+      <h2>Meet The People Behind MMT Care</h2>
+      <p>
+        A multidisciplinary team committed to quality care,
+        compliance, innovation, and participant outcomes.
+      </p>
+    </div>
+
+    <!-- Optional department filter buttons -->
+    <div id="teamFilters" class="team-filters" style="display:none">
+      <button class="filter-btn active" data-dept="">All</button>
+      <button class="filter-btn" data-dept="Leadership">Leadership</button>
+      <button class="filter-btn" data-dept="Clinical">Clinical</button>
+      <button class="filter-btn" data-dept="Support Coordination">Support Coordination</button>
+      <button class="filter-btn" data-dept="Operations">Operations</button>
+      <button class="filter-btn" data-dept="Advisory">Advisory</button>
+    </div>
+
+    <!-- Skeleton loading state -->
+    <div id="teamSkeleton" class="team-grid">
+      <div class="team-card skeleton"></div>
+      <div class="team-card skeleton"></div>
+      <div class="team-card skeleton"></div>
+    </div>
+
+    <div id="teamGrid" class="team-grid" style="display:none"></div>
+    <div id="teamError" style="display:none;text-align:center;padding:3rem;color:#777"></div>
+  </div>
+</section>
+
+<!-- Team Section CSS -->
+<style>
+.team-section {
+  padding: 120px 0;
+  background: #f7f8fa;
+}
+
+.team-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 40px;
+  margin-top: -10px;
+}
+
+.filter-btn {
+  padding: 8px 20px;
+  border-radius: 50px;
+  border: 1.5px solid #e0e0e0;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s ease;
+  color: #555;
+}
+
+.filter-btn.active,
+.filter-btn:hover {
+  background: #F5881F;
+  border-color: #F5881F;
+  color: #fff;
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  margin-top: 60px;
+}
+
+.team-card {
+  background: #fff;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+  transition: 0.35s ease;
+}
+
+.team-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+}
+
+.team-card.skeleton {
+  min-height: 480px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.team-card.hidden {
+  display: none;
+}
+
+.team-image-wrap {
+  height: 340px;
+  overflow: hidden;
+  background: #f0ede9;
+}
+
+.team-image-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  loading: lazy;
+  transition: transform 0.5s ease;
+}
+
+.team-card:hover .team-image-wrap img {
+  transform: scale(1.04);
+}
+
+.team-content {
+  padding: 28px;
+}
+
+.team-content h3 {
+  font-size: 24px;
+  margin-bottom: 6px;
+  color: #1B2A3B;
+}
+
+.team-content .team-role {
+  display: block;
+  color: #F5881F;
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+
+.team-content .team-dept {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #999;
+  margin-bottom: 14px;
+}
+
+.team-content .team-bio {
+  line-height: 1.8;
+  color: #555;
+  font-size: 15px;
+}
+
+.team-content .team-linkedin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  color: #0a66c2;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.team-content .team-linkedin:hover {
+  opacity: 0.75;
+}
+</style>
+
+<!-- Team Section JS -->
+<script>
+(function () {
+  const API_URL = 'https://team.mmtcare.com.au/.netlify/functions/team';
+  let allMembers = [];
+
+  async function loadTeam() {
+    try {
+      const response = await fetch(API_URL);
+      if (!response.ok) throw new Error('Failed to load team');
+      allMembers = await response.json();
+
+      document.getElementById('teamSkeleton').style.display = 'none';
+      document.getElementById('teamGrid').style.display = 'grid';
+
+      // Show filters only if there are multiple departments
+      const depts = [...new Set(allMembers.map(m => m.department).filter(Boolean))];
+      if (depts.length > 1) {
+        document.getElementById('teamFilters').style.display = 'flex';
+      }
+
+      renderTeam(allMembers);
+      bindFilters();
+
+    } catch (err) {
+      document.getElementById('teamSkeleton').style.display = 'none';
+      const errEl = document.getElementById('teamError');
+      errEl.style.display = 'block';
+      errEl.textContent = 'Unable to load team profiles. Please try again later.';
+      console.error('Team load error:', err);
+    }
+  }
+
+  function renderTeam(members) {
+    const container = document.getElementById('teamGrid');
+    container.innerHTML = members.map(member => `
+      <div class="team-card" data-dept="${member.department || ''}">
+        <div class="team-image-wrap">
+          <img src="${member.image_url || ''}" alt="${member.first_name} ${member.last_name}" loading="lazy">
+        </div>
+        <div class="team-content">
+          <h3>${member.first_name} ${member.last_name}</h3>
+          <span class="team-role">${member.role}</span>
+          ${member.department ? `<span class="team-dept">${member.department}</span>` : ''}
+          <p class="team-bio">${member.description}</p>
+          ${member.linkedin_url ? `<a href="${member.linkedin_url}" target="_blank" rel="noopener noreferrer" class="team-linkedin">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+            LinkedIn
+          </a>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function bindFilters() {
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const dept = btn.dataset.dept;
+        const filtered = dept ? allMembers.filter(m => m.department === dept) : allMembers;
+        renderTeam(filtered);
+      });
+    });
+  }
+
+  loadTeam();
+})();
+</script>

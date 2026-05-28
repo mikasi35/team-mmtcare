@@ -1,0 +1,11 @@
+{
+  "name": "mmt-care-team-portal",
+  "version": "3.0.0",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  }
+}

@@ -1,0 +1,268 @@
+<!-- ============================================================
+  MMT Care — Team Section
+  Paste this into a Custom HTML block on the About page in WordPress
+  ============================================================ -->
+
+<section class="mmt-team-section">
+  <div class="mmt-team-container">
+
+    <!-- Department filter buttons (auto-shown if multiple departments exist) -->
+    <div id="mmtTeamFilters" class="mmt-team-filters" style="display:none">
+      <button class="mmt-filter-btn mmt-filter-active" data-dept="">All</button>
+      <button class="mmt-filter-btn" data-dept="Leadership">Leadership</button>
+      <button class="mmt-filter-btn" data-dept="Clinical">Clinical</button>
+      <button class="mmt-filter-btn" data-dept="Support Coordination">Support Coordination</button>
+      <button class="mmt-filter-btn" data-dept="Operations">Operations</button>
+      <button class="mmt-filter-btn" data-dept="Advisory">Advisory</button>
+    </div>
+
+    <!-- Skeleton loading cards shown while fetching -->
+    <div id="mmtTeamSkeleton" class="mmt-team-grid">
+      <div class="mmt-team-card mmt-skeleton"></div>
+      <div class="mmt-team-card mmt-skeleton"></div>
+      <div class="mmt-team-card mmt-skeleton"></div>
+    </div>
+
+    <!-- Team cards injected here -->
+    <div id="mmtTeamGrid" class="mmt-team-grid" style="display:none"></div>
+
+    <!-- Error message -->
+    <div id="mmtTeamError" style="display:none;text-align:center;padding:3rem;color:#777;font-size:15px"></div>
+
+  </div>
+</section>
+
+<style>
+.mmt-team-section {
+  padding: 80px 0;
+  background: #f7f8fa;
+  width: 100%;
+}
+
+.mmt-team-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.mmt-team-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.mmt-filter-btn {
+  padding: 8px 22px;
+  border-radius: 50px;
+  border: 1.5px solid #e0e0e0;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s ease;
+  color: #555;
+}
+
+.mmt-filter-btn.mmt-filter-active,
+.mmt-filter-btn:hover {
+  background: #F5881F;
+  border-color: #F5881F;
+  color: #fff;
+}
+
+.mmt-team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+}
+
+.mmt-team-card {
+  background: #fff;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.mmt-team-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+}
+
+.mmt-skeleton {
+  min-height: 480px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: mmtShimmer 1.5s infinite;
+}
+
+@keyframes mmtShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.mmt-image-wrap {
+  height: 320px;
+  overflow: hidden;
+  background: #f0ede9;
+}
+
+.mmt-image-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s ease;
+}
+
+.mmt-team-card:hover .mmt-image-wrap img {
+  transform: scale(1.04);
+}
+
+.mmt-team-content {
+  padding: 26px 28px 28px;
+}
+
+.mmt-team-content h3 {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 5px;
+  color: #1B2A3B;
+}
+
+.mmt-team-role {
+  display: block;
+  color: #F5881F;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.mmt-team-dept {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #aaa;
+  margin-bottom: 14px;
+}
+
+.mmt-team-bio {
+  line-height: 1.8;
+  color: #555;
+  font-size: 14px;
+  margin: 0 0 4px;
+}
+
+.mmt-team-linkedin {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 14px;
+  color: #0a66c2;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.mmt-team-linkedin:hover {
+  opacity: 0.75;
+  text-decoration: none;
+  color: #0a66c2;
+}
+</style>
+
+<script>
+(function () {
+  // ── Change this to your Netlify site URL if team.mmtcare.com.au is not set up yet ──
+  var API_URL = 'https://cheery-gumdrop-9d736d.netlify.app/.netlify/functions/team';
+
+  var allMembers = [];
+
+  function loadTeam() {
+    fetch(API_URL)
+      .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        allMembers = data;
+
+        document.getElementById('mmtTeamSkeleton').style.display = 'none';
+
+        if (!allMembers.length) {
+          var err = document.getElementById('mmtTeamError');
+          err.style.display = 'block';
+          err.textContent = 'No team profiles have been approved yet.';
+          return;
+        }
+
+        // Show department filters if more than one department exists
+        var depts = allMembers.map(function(m) { return m.department; }).filter(Boolean);
+        var uniqueDepts = depts.filter(function(d, i) { return depts.indexOf(d) === i; });
+        if (uniqueDepts.length > 1) {
+          document.getElementById('mmtTeamFilters').style.display = 'flex';
+        }
+
+        renderTeam(allMembers);
+        bindFilters();
+      })
+      .catch(function(err) {
+        document.getElementById('mmtTeamSkeleton').style.display = 'none';
+        var errEl = document.getElementById('mmtTeamError');
+        errEl.style.display = 'block';
+        errEl.textContent = 'Unable to load team profiles. Please try again later.';
+        console.error('MMT team load error:', err);
+      });
+  }
+
+  function renderTeam(members) {
+    var grid = document.getElementById('mmtTeamGrid');
+    grid.style.display = 'grid';
+    grid.innerHTML = members.map(function(m) {
+      return '<div class="mmt-team-card">' +
+        '<div class="mmt-image-wrap">' +
+          '<img src="' + (m.image_url || '') + '" alt="' + m.first_name + ' ' + m.last_name + '" loading="lazy">' +
+        '</div>' +
+        '<div class="mmt-team-content">' +
+          '<h3>' + m.first_name + ' ' + m.last_name + '</h3>' +
+          '<span class="mmt-team-role">' + m.role + '</span>' +
+          (m.department ? '<span class="mmt-team-dept">' + m.department + '</span>' : '') +
+          '<p class="mmt-team-bio">' + m.description + '</p>' +
+          (m.linkedin_url
+            ? '<a href="' + m.linkedin_url + '" target="_blank" rel="noopener noreferrer" class="mmt-team-linkedin">' +
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>' +
+                ' LinkedIn' +
+              '</a>'
+            : '') +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function bindFilters() {
+    var btns = document.querySelectorAll('.mmt-filter-btn');
+    btns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        btns.forEach(function(b) { b.classList.remove('mmt-filter-active'); });
+        btn.classList.add('mmt-filter-active');
+        var dept = btn.getAttribute('data-dept');
+        var filtered = dept
+          ? allMembers.filter(function(m) { return m.department === dept; })
+          : allMembers;
+        renderTeam(filtered);
+      });
+    });
+  }
+
+  // Run after DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadTeam);
+  } else {
+    loadTeam();
+  }
+})();
+</script>
